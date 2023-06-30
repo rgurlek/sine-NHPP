@@ -1,7 +1,5 @@
 import numpy as np
 import pandas as pd
-np.random.seed(123)
-from scipy.integrate import quad, simps
 
 def center_periodogram(T, obs, freq_grid, a):
     def hann(t):
@@ -34,35 +32,6 @@ def center_periodogram(T, obs, freq_grid, a):
     return periodogram
 
 
-def tau_simulate(max_h, T, lambd, freq_grid):
-    # compute the threshold tau by simulating an HPP
-    obs = generate_data(T, np.zeros([1, 1]), np.zeros([1, 1]), np.zeros([1, 1]), lambd) # Homogeneous Poisson Process
-    p = center_periodogram(T, obs, freq_grid, lambd)
-    threshold = 0.0181 * max_h + 1.06 * np.max(p)
-    return threshold
-
-
-def generate_data(T, freq, phase, mag, const_term):
-    ub = const_term + sum(np.abs(mag))  # upper bound of the rate
-    cos_coef = np.cos(phase) * mag
-    sin_coef = -np.sin(phase) * mag
-    tt = 0
-    obs = np.array([])
-    while tt < T:
-        tt = tt + np.random.exponential(1 / ub)
-        if np.random.uniform(0, 1) < (rate(tt, freq, const_term, cos_coef, sin_coef) / ub):
-            obs = np.append(obs, tt)
-    obs = np.delete(obs, -1)
-    return obs.reshape((1, -1))
-
-
-def     rate(t, freq, constant, cos_coef, sin_coef):
-    # generate the rate at time t, with frequency, phase, and magnitude generated in the .m file vectorize the t argument
-    return (constant +
-            np.dot(cos_coef, np.cos(2 * np.pi * freq.T * t)) +
-            np.dot(sin_coef, np.sin(2 * np.pi * freq.T * t)))
-
-
 def lse_time_cont(obs, periodogram, freq_grid, tau, T):
     # This function estimates the frequencies and their magnitudes from the time stamps(obs),
     # their computed periodogram(periodogram), given frequency grid(freq_grid), the threshold(tau), and T
@@ -81,9 +50,7 @@ def lse_time_cont(obs, periodogram, freq_grid, tau, T):
     while I.size > 0:
         ind.append(I[0]) # Append the index with the biggest density to ind.
         I = I[np.abs(freq_grid[:, I] - freq_grid[:, I[0]]).flatten() > (2 / T)] # Remove that index and its neighbours
-    fitted_freq = freq_grid[:, ind]
-    fitted_freq = np.unique(np.concatenate(
-        [fitted_freq.flatten(), np.array([1,2,3,4,5,6]) / (T + T * 0.3)]))
+    fitted_freq = freq_grid[:, ind].flatten()
     freq_num = fitted_freq.size
 
     freq_double = np.concatenate([[0], fitted_freq, -fitted_freq])
@@ -103,7 +70,7 @@ def lse_time_cont(obs, periodogram, freq_grid, tau, T):
     d = -2 * np.imag(coef_est[1:(1+freq_num)]).T
 
     amplitude = np.sqrt(c ** 2 + d ** 2)
-    phase = np.arctan(d/c)
+    phase = np.arctan2(-d,c)
 
     fitted_params = pd.DataFrame(np.concatenate([
         fitted_freq.reshape((-1,1)),
