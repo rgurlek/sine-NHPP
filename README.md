@@ -4,12 +4,6 @@ This repository provides Python code for implementing the estimation procedure f
 Please refer to Appendix A of [Chen et al. (2023)](#suggested-citations) for details of the procedure, which is a simpler variant of the one proposed in [Chen, Lee, and Negahban (2019)](#suggested-citations).
 
 
-### Suggested citations
-- Chen, Gurlek, Lee, Shen (2023): [Can customer arrival rates be modelled by sine waves?](https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3125120) (Joint issue in *Service Science* and *Stochastic Systems*, forthcoming)
-
-- Chen, Lee, Negahban (2019): [Super-resolution estimation of cyclic arrival rates](https://projecteuclid.org/journals/annals-of-statistics/volume-47/issue-3/Super-resolution-estimation-of-cyclic-arrival-rates/10.1214/18-AOS1736.full) (*Annals of Statistics*  47:3:1754-1775)
-
-
 ### Configuring the Python environment
 
 We recommend creating a virtual Python environment to ensure the correct versioning of all dependencies. To this end, run the lines below in an Anaconda Prompt
@@ -38,3 +32,9 @@ Run the tutorial *sine-NHPP_tutorial.ipynb* for a demonstration of the estimatio
 ```
 jupyter notebook sine-NHPP_tutorial.ipynb
 ```
+
+
+### Suggested citations
+- Chen, Gurlek, Lee, Shen (2023): [Can customer arrival rates be modelled by sine waves?](https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3125120) (Joint issue in *Service Science* and *Stochastic Systems*, forthcoming)
+
+- Chen, Lee, Negahban (2019): [Super-resolution estimation of cyclic arrival rates](https://projecteuclid.org/journals/annals-of-statistics/volume-47/issue-3/Super-resolution-estimation-of-cyclic-arrival-rates/10.1214/18-AOS1736.full) (*Annals of Statistics*  47:3:1754-1775)
