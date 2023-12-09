@@ -1,0 +1,117 @@
+<html>
+<head>
+<title>sine-NHPP_tutorial.ipynb</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #808080;}
+.s1 { color: #a9b7c6;}
+.s2 { color: #cc7832;}
+.s3 { color: #6a8759;}
+.s4 { color: #6897bb;}
+</style>
+</head>
+<body bgcolor="#2b2b2b">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+sine-NHPP_tutorial.ipynb</font>
+</center></td></tr></table>
+<pre><span class="s0">#%% md 
+</span><span class="s1"># Tutorial for fitting sinusoidal nonhomogeneous Poisson processes (NHPPs) 
+</span><span class="s0">#%% md 
+</span><span class="s1">This tutorial demonstrates how to fit to data the sinusoidal NHPP model with arrival rate 
+\begin{equation}\tag{1} 
+\lambda(t)=c_{0}+\sum_{k=1}^{p}c_{k}\cos(2\pi\nu_{k}t+\phi_{k}) 
+\end{equation} 
+from Chen et al. (2023). The frequencies $\nu_1,\cdots,\nu_p$ can take on any values in a pre-specified band $(0,B]$, and $\phi_k \in [0,2\pi)$ and $c_k$ are respectively the phase and amplitude of the $k$-th sinusoid. The number of sinusoids $p$ will be estimated from data. 
+ 
+The details of the estimation procedure is described in Appendix A of Chen et al. (2023). In turn, the procedure is a simpler variant of the one proposed in Chen, Lee, and Negahban (2019). 
+ 
+#### Suggested citations 
+- Chen, Gurlek, Lee, Shen (2023): [Can customer arrival rates be modelled by sine waves?](https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3125120) (Joint issue in *Service Science* and *Stochastic Systems*, forthcoming) 
+ 
+- Chen, Lee, Negahban (2019): [Super-resolution estimation of cyclic arrival rates](https://projecteuclid.org/journals/annals-of-statistics/volume-47/issue-3/Super-resolution-estimation-of-cyclic-arrival-rates/10.1214/18-AOS1736.full) (*Annals of Statistics*  47:3:1754-1775) 
+</span><span class="s0">#%% 
+</span><span class="s2">import </span><span class="s1">pandas </span><span class="s2">as </span><span class="s1">pd</span>
+<span class="s2">import </span><span class="s1">numpy </span><span class="s2">as </span><span class="s1">np</span>
+<span class="s2">import </span><span class="s1">help_funcs</span>
+<span class="s2">import </span><span class="s1">matplotlib.pyplot </span><span class="s2">as </span><span class="s1">plt</span>
+<span class="s0">#%% md 
+</span><span class="s1">Read in a simulated arrivals dataset consisting of arrival timestamps over the course of 365 days ($T=365$). The data is generated according to the NHPP model in Section 3 of the paper, with $\alpha = 3$. To keep this illustrative dataset to a reasonable size, we scaled down the arrival rate used in the paper by a factor of 10 in order to reduce the number of simulated arrivals. 
+</span><span class="s0">#%% 
+</span><span class="s1">arrivals = pd.read_csv(</span><span class="s3">'simulated_arrivals.csv'</span><span class="s1">)</span>
+<span class="s1">arrivals.head()</span>
+<span class="s0">#%% md 
+</span><span class="s1">Use the `center_periodogram()` function from the `help_funcs` module to identify the frequencies $\nu_1,\cdots,\nu_p$ in the arrivals data. This corresponds to equation (12) and Figure 4 in Appendix A of Chen et al. (2023). 
+ 
+ 
+The `center_periodogram()` function accepts the following arguments: 
+- `T`: Length of the observation window ($T=365$ days in the example) 
+- `obs`: The vector of arrival timestamps as a $1\times N$ numpy array 
+- `a`: Average arrival rate, `N`/`T` 
+- `freq_grid`: The grid of frequencies used to sample the periodogram. The grid spacing needs to be finer than $O(1/T)$. In this example we use a resolution of $1/(T\log T)$ 
+</span><span class="s0">#%% 
+</span><span class="s1">obs = arrivals.arrival_time_in_days.values.reshape((</span><span class="s4">1</span><span class="s2">, </span><span class="s1">-</span><span class="s4">1</span><span class="s1">))</span>
+<span class="s1">T = </span><span class="s4">365</span>
+<span class="s1">a = obs.size / T</span>
+
+<span class="s1">max_freq = </span><span class="s4">6 </span><span class="s0">#in this example, this means a maximum frequency of B=6 cycles per day</span>
+<span class="s1">freq_resolution = T*np.log(T)</span>
+<span class="s1">freq_grid = np.linspace( </span><span class="s4">0</span><span class="s2">, </span><span class="s1">max_freq</span><span class="s2">, </span><span class="s1">num=int( max_freq*freq_resolution ) ).reshape((</span><span class="s4">1</span><span class="s2">, </span><span class="s1">-</span><span class="s4">1</span><span class="s1">))</span>
+<span class="s0">#%% md 
+</span><span class="s1">The periodogram may take some time to run, especially for large datasets. 
+</span><span class="s0">#%% 
+</span><span class="s1">windowed_periodogram = help_funcs.center_periodogram(T</span><span class="s2">, </span><span class="s1">obs</span><span class="s2">, </span><span class="s1">freq_grid</span><span class="s2">, </span><span class="s1">a)</span>
+<span class="s0">#%% md 
+</span><span class="s1">Graph the periodogram to visualize the frequencies present in the arrivals data, and their amplitudes. 
+</span><span class="s0">#%% 
+</span><span class="s1">plt.plot(freq_grid.flatten()</span><span class="s2">, </span><span class="s1">windowed_periodogram.flatten())</span>
+
+<span class="s1">plt.xlabel(</span><span class="s3">&quot;Frequency (cycles/day)&quot;</span><span class="s1">)</span>
+<span class="s1">plt.ylabel(</span><span class="s3">&quot;Amplitude&quot;</span><span class="s1">)</span>
+<span class="s0">#%% md 
+</span><span class="s1">Ignore frequencies with amplitudes below a certain noise threshold $\tau$. This represents the level of statistical noise in the frequency domain. The threshold $\tau$ can often be visually inspected. In the example above we pick $\tau = 6$. 
+ 
+The set of frequencies with amplitudes larger than $\tau$ is further reduced so that there are no frequencies within $4/T$ of one another (Step 4 in Algorithm A.1 of Chen et al. (2023)). The amplitudes $c_k$'s and phases $\phi_k$'s for the remaining frequencies are then fit by complex-valued least squares. The `lse_time_cont()` function from the `help_funcs` module accomplishes these tasks. 
+</span><span class="s0">#%% 
+</span><span class="s1">tau = </span><span class="s4">6 </span><span class="s0">#determined by visual inspection of the periodogram above</span>
+
+<span class="s1">constant</span><span class="s2">, </span><span class="s1">fitted_params = help_funcs.lse_time_cont(</span>
+    <span class="s1">obs</span><span class="s2">, </span><span class="s1">windowed_periodogram</span><span class="s2">, </span><span class="s1">freq_grid</span><span class="s2">, </span><span class="s1">tau</span><span class="s2">, </span><span class="s1">T</span>
+<span class="s1">)</span>
+<span class="s0">#%% md 
+</span><span class="s1">The estimated constant ($c_0$) is: 
+</span><span class="s0">#%% 
+</span><span class="s1">print(constant)</span>
+<span class="s0">#%% md 
+</span><span class="s1">The other estimated parameters are given in the table below: 
+- `freq`: The frequencies $\nu_k$'s (in this example, cycles per day) 
+- `amplitude`: The amplitudes $c_k$'s (arrivals per day in this example) 
+-  `phase`: The phases $\phi_k$'s 
+</span><span class="s0">#%% 
+</span><span class="s1">fitted_params.index = fitted_params.index + </span><span class="s4">1</span>
+<span class="s1">fitted_params</span>
+<span class="s0">#%% md 
+</span><span class="s1">Now that we have the parameter estimates, plot the estimated arrival rate $(1)$ over the first 14 days, and compare it to the ground truth arrival rate used in the simulation. 
+</span><span class="s0">#%% 
+</span><span class="s1">ground_truth = pd.read_csv(</span><span class="s3">&quot;ground_truth_arrival_rate.csv&quot;</span><span class="s1">)</span>
+
+<span class="s2">def </span><span class="s1">sine_NHPP_fit(t</span><span class="s2">, </span><span class="s1">constant</span><span class="s2">, </span><span class="s1">fitted_params):</span>
+    <span class="s2">return </span><span class="s1">constant.item() + np.sum(</span>
+        <span class="s1">fitted_params.amplitude *</span>
+        <span class="s1">np.cos(</span><span class="s4">2 </span><span class="s1">* np.pi * fitted_params.freq * t + fitted_params.phase)</span>
+    <span class="s1">).item()</span>
+
+<span class="s1">ground_truth[</span><span class="s3">&quot;sine-NHPP_fit&quot;</span><span class="s1">] = [sine_NHPP_fit(t</span><span class="s2">, </span><span class="s1">constant</span><span class="s2">, </span><span class="s1">fitted_params)</span>
+                       <span class="s2">for </span><span class="s1">t </span><span class="s2">in </span><span class="s1">ground_truth[</span><span class="s3">&quot;days&quot;</span><span class="s1">]]</span>
+<span class="s0">#%% 
+</span><span class="s1">ground_truth.head()</span>
+<span class="s0">#%% 
+</span><span class="s1">fig</span><span class="s2">, </span><span class="s1">ax = plt.subplots()</span>
+<span class="s1">ground_truth[ground_truth[</span><span class="s3">&quot;days&quot;</span><span class="s1">] &lt; </span><span class="s4">14</span><span class="s1">].plot(x = </span><span class="s3">&quot;days&quot;</span><span class="s2">, </span><span class="s1">y = [</span><span class="s3">&quot;true_rate&quot;</span><span class="s2">, </span><span class="s3">&quot;sine-NHPP_fit&quot;</span><span class="s1">]</span><span class="s2">,</span>
+                                      <span class="s1">ax=ax)</span>
+<span class="s1">ax.legend([</span><span class="s3">&quot;Ground truth&quot;</span><span class="s2">, </span><span class="s3">&quot;Estimated arrival rate&quot;</span><span class="s1">])</span>
+<span class="s1">ax.set_xlabel(</span><span class="s3">&quot;Day&quot;</span><span class="s1">)</span>
+<span class="s1">ax.set_ylabel(</span><span class="s3">&quot;Arrivals/Day&quot;</span><span class="s1">)</span></pre>
+</body>
+</html>
